@@ -120,6 +120,7 @@ LEDENET_TIME_RESPONSE_LEN = 12  # 10 14 16 01 02 10 26 20 07 00 0f a9
 LEDENET_TIMERS_8BYTE_RESPONSE_LEN = 88
 LEDENET_TIMERS_9BYTE_RESPONSE_LEN = 94
 LEDENET_TIMERS_SOCKET_RESPONSE_LEN = 100
+LEDENET_EXTENDED_STATE_LED_COUNT_POS = 18  # byte index in the raw extended state buffer
 
 MSG_ORIGINAL_POWER_STATE = "original_power_state"
 MSG_ORIGINAL_STATE = "original_state"
@@ -1702,6 +1703,12 @@ class ProtocolLEDENETExtendedCustom(ProtocolLEDENET25Byte):
                 check_sum,
             )
         )
+
+    def extended_state_led_count(self, raw_state: bytes) -> int | None:
+        """Return the configured LED count from an extended state response, or None."""
+        if not self.is_valid_extended_state_response(raw_state):
+            return None
+        return raw_state[LEDENET_EXTENDED_STATE_LED_COUNT_POS]
 
 
 class ProtocolLEDENETAddressableBase(ProtocolLEDENET9Byte):
