@@ -4405,12 +4405,8 @@ def test_extended_state_led_count():
     """
     proto = ProtocolLEDENETExtendedCustom()
 
-    frame_100 = bytes.fromhex(
-        "ea810100b60924660164f000000000640500640000002002010003"
-    )
-    frame_80 = bytes.fromhex(
-        "ea810100b60923660164f000000000640500500000002002010003"
-    )
+    frame_100 = bytes.fromhex("ea810100b60924660164f000000000640500640000002002010003")
+    frame_80 = bytes.fromhex("ea810100b60923660164f000000000640500500000002002010003")
 
     assert proto.extended_state_led_count(frame_100) == 100
     assert proto.extended_state_led_count(frame_80) == 80
