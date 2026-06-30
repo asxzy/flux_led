@@ -90,6 +90,7 @@ from .protocol import (
     PROTOCOL_LEDENET_ADDRESSABLE_CHRISTMAS,
     PROTOCOL_LEDENET_CCT,
     PROTOCOL_LEDENET_CCT_WRAPPED,
+    PROTOCOL_LEDENET_EXTENDED_CUSTOM,
     PROTOCOL_LEDENET_ORIGINAL,
     PROTOCOL_LEDENET_ORIGINAL_CCT,
     PROTOCOL_LEDENET_ORIGINAL_RGBW,
@@ -110,6 +111,7 @@ from .protocol import (
     ProtocolLEDENETAddressableChristmas,
     ProtocolLEDENETCCT,
     ProtocolLEDENETCCTWrapped,
+    ProtocolLEDENETExtendedCustom,
     ProtocolLEDENETOriginal,
     ProtocolLEDENETOriginalCCT,
     ProtocolLEDENETOriginalRGBW,
@@ -143,6 +145,7 @@ PROTOCOL_TYPES = (
     | ProtocolLEDENET9ByteAutoOn
     | ProtocolLEDENET9ByteDimmableEffects
     | ProtocolLEDENET25Byte
+    | ProtocolLEDENETExtendedCustom
     | ProtocolLEDENETAddressableA1
     | ProtocolLEDENETAddressableA2
     | ProtocolLEDENETAddressableA3
@@ -187,6 +190,7 @@ PROTOCOL_NAME_TO_CLS = {
     PROTOCOL_LEDENET_9BYTE_AUTO_ON: ProtocolLEDENET9ByteAutoOn,
     PROTOCOL_LEDENET_9BYTE_DIMMABLE_EFFECTS: ProtocolLEDENET9ByteDimmableEffects,
     PROTOCOL_LEDENET_25BYTE: ProtocolLEDENET25Byte,
+    PROTOCOL_LEDENET_EXTENDED_CUSTOM: ProtocolLEDENETExtendedCustom,
     PROTOCOL_LEDENET_ADDRESSABLE_A3: ProtocolLEDENETAddressableA3,
     PROTOCOL_LEDENET_ADDRESSABLE_A2: ProtocolLEDENETAddressableA2,
     PROTOCOL_LEDENET_ADDRESSABLE_A1: ProtocolLEDENETAddressableA1,
@@ -246,6 +250,7 @@ class LEDENETDevice:
         self._device_config: LEDENETAddressableDeviceConfiguration | None = None
         self._last_message: dict[str, bytes] = {}
         self._unavailable_reason: str | None = None
+        self._extended_led_count: int | None = None
 
     def _protocol_probes(
         self,
@@ -486,6 +491,11 @@ class LEDENETDevice:
         return self._device_config.music_segments
 
     @property
+    def led_count(self) -> int | None:
+        """Return the device's configured LED count (0xB6), or None if unknown."""
+        return self._extended_led_count
+
+    @property
     def wiring(self) -> str | None:
         """Return the sort order as a string."""
         device_config = self.model_data.device_config
@@ -637,6 +647,11 @@ class LEDENETDevice:
         if self.microphone:
             return [*effects, EFFECT_RANDOM, EFFECT_MUSIC]
         return [*effects, EFFECT_RANDOM]
+
+    @property
+    def supports_extended_custom_effects(self) -> bool:
+        """Return True if the device uses the extended custom protocol."""
+        return self.protocol == PROTOCOL_LEDENET_EXTENDED_CUSTOM
 
     @property
     def effect(self) -> str | None:
@@ -859,6 +874,8 @@ class LEDENETDevice:
     def process_extended_state_response(self, msg: bytes) -> bool:
         """Process and extended state response."""
         assert self._protocol is not None
+        if isinstance(self._protocol, ProtocolLEDENETExtendedCustom):
+            self._extended_led_count = self._protocol.extended_state_led_count(msg)
         self._process_valid_state_response(self._protocol.extended_state_to_state(msg))
         return True
 
